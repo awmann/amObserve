@@ -5,19 +5,21 @@ To get you started:
 .r amobserve
 amobserve
 click on 'Load'
-read in a file like the test.txt file I attached
+read in a file like the test.txt or test_types.txt file I attached
 Then click plot
 
-You will see the current distribution of targets on the sky.
+You will see the current distribution of targets on the sky, colored by ‘type’. Technically type was designed for standards versus targets, but you can use any reasonable string and up to 4 unique types (I can expand this but the plot gets quite confusing). 
 
 Click on a target and it will show an airmass plot of that target for the night in local and UTC time. The selected target should be highlighted in red on the upper plot.
 You can keep clicking on targets.
-To escape the target clicking mode click anywhere on the bottom plot.
+To escape the target clicking mode click anywhere ‘off’ the plot (try clicking the bottom plot).
 Note that you cannot hit any of the buttons (well you can but they won’t work) while you are clicking on targets. I can't figure out a way to get around this yet (limitations of cursor.pro)
+
+Airmass and Altitude buttons switch between linear in airmass and linear in altitude in the plot. You have to hit ‘plot’ to realize the change.
 
 Quit doesn’t work, not sure why, just use .reset to quit.
 
-You can change to any date by typing in the YYYYMMDDHH.HH. I think this is UTC time, but I'll adjust to local time in a future version (or let user specify)
+You can change to any date by typing in the YYYYMMDDHH.HH (hit return after changing, you will get a confirmation in the terminal). I think this is UTC time, but I'll adjust to local time in a future version (or let user specify). Refresh will undo this change (refresh sets to current time).
 
 You can change observatories, but there are just 3 options.
 
@@ -30,11 +32,8 @@ and changing x11 preferences (windows) to activate 'click through inactive windo
 
 
 Things not included but I'm currently working on:
-Bottom plot linear in airmass (user choice)
-Different colors for standards and targets (good for finding A0V or WD stars)
 Ability to mark a target as observed to remove from list
 'Suggested' next targets with short slews (complicated)
-Coloring/symbols by user selected priorities
 Multiple targets in airmass plot
 Get rid of the 'flicker' effect when you click on stars (it's trying to re-plot the whole thing)
 Moon on overhead plot
