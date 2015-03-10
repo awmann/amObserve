@@ -95,7 +95,7 @@ pro AMOBSERVE::plot,event
                     axis,yaxis=1,xtitle='Airmass',ytickv=[60.0,53.0926,41.75,29.904,19.317864,14.276855],ytickname=['1.15','1.25','1.5','2.0','3.0','4.0'],yticks=5
                  end
                  1: begin
-                    good = where(airm gt 1 and airm lt 10)
+                    good = where(airm gt 1 and airm lt 6 and alt le 90.0 and alt gt 5)
                     plot,local[good],airm[good],yrange=[4,1],xstyle=9,ystyle=9,xtitle='Local Time',ytitle='Airmass',xrange=[17,31],xticks=6,xtickv=hrmarkers,xtickname=['18','20','22','0','2','4','6'],thick=4
                     if local[where(alt eq max(alt))] gt 24 then cgtext,18,1.3,name,charsize=1.5,charthick=2.0,alignment=0.0 else cgtext,30,1.3,name,charsize=1.5,charthick=2.0,alignment=1.0
                     axis,yaxis=1,xtitle='Altitude (!U0!N)',ytickname=['80','60','40','20'],ytickv=[1.015,1.15,1.55,2.90],yticks=3
@@ -237,7 +237,8 @@ PRO amobserve::obs,event
   case event.value of
      0: self.observatory = 'mcdonald'
      1: self.observatory = 'keck'
-     2: self.observatory = 'mmt'
+     2: self.observatory = 'mmto'
+     3: self.observatory = 'Palomar'
      else: self.observatory = 'keck'
   endcase
   print,'Observatory set to '+self.observatory
@@ -329,7 +330,7 @@ PRO amobserve::widget_setup
 
 
 ;***select observatory***
-  values = ['McDonald','Maunea Kea','MMT']
+  values = ['McDonald','Maunea Kea','MMT','Palomar']
   bgroup1 = CW_BGROUP(self.amobserve_base, values, xoffset=250,/COLUMN, $
                       LABEL_TOP='Observatory', /FRAME, uvalue={object:self, method:'OBS'})
 
