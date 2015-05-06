@@ -60,6 +60,7 @@ pro AMOBSERVE::plot,event
            ys = hangle*sin(az*!pi/180.)
            dist = sqrt((x-xs)^2.+(y-ys)^2.)
            star = where(dist eq min(dist))
+           star = star[0]
 
            if x gt 90 or x lt -90 or y lt -90 or y gt 90 or min(dist) gt 15 or airm[star] gt 5.0 or airm[star] lt 0.0 then begin
               cont = 0
@@ -135,7 +136,7 @@ pro AMOBSERVE::plot,event
         cgloadct,0
         if start eq 0 then noerase = 1 else noerase = 0
         az += 90.0 ;; put north up
-        az*=-1.0 ;; put east to the left
+        ;;az*=-1.0 ;; put east to the left
         Plot, hangle[l],(az[l]*!pi/180.), /Polar, XStyle=5, YStyle=5, /NoData,xrange=[-80,80],yrange=[-80,80],noerase=noerase
         Axis, /XAxis, 0, 0,xtickn=strarr(10)+' ',ytickn=strarr(10)+' '
         Axis, /YAxis, 0, 0,xtickn=strarr(10)+' ',ytickn=strarr(10)+' '
@@ -171,7 +172,13 @@ pro AMOBSERVE::plot,event
            legend,uniqtypes,color=colors,psym=8,/top,/left,box=0,charthick=2.0,charsize=1.25
         endif
         
-
+        ;; add the moon?
+        if self.moon eq 1 then begin
+           moonpos,jd,moonra,moondec
+           eq2hor,moonra,moondec,jd,moonalt,moonaz,obsname=self.observatory
+           moonangle = 90.0-moonalt
+           oplot,[moonangle],[moonaz]*!pi/180.,psym=8,color=cgcolor('pink'),symsize=3.0
+        endif
         
         legend,['1.25','1.50','2.00','3.00'],textcolor=[cgcolor('green'),cgcolor('teal'),cgcolor('orange'),cgcolor('red')],/bottom,/left,box=0,charthick=2.0,charsize=1.25
 
@@ -202,6 +209,16 @@ pro AMOBSERVE::SELECT,event
   ;; not implimented yet
   
 end
+
+PRO amobserve::moon,event
+  if self.moon eq 1 then begin
+     print,'Turning Moon off'
+     self.moon = 0
+  endif else begin
+     print,'Turning Moon on'
+     self.moon = 1
+  endelse
+END
 
 PRO amobserve::plotstyle1,event
   self.plotstyle = 1
@@ -310,6 +327,10 @@ PRO amobserve::widget_setup
   refresh= WIDGET_BUTTON(self.amobserve_base, /FRAME, xoffset=110,yoffset=300, $
                       VALUE=' Refresh ',UVALUE={object:self, method:'Refresh'})
 
+;***create Moon button:***
+  refresh= WIDGET_BUTTON(self.amobserve_base, /FRAME, xoffset=110,yoffset=260, $
+                      VALUE=' Moon ',UVALUE={object:self, method:'moon'})
+
 ;***create date field:***
   temp =  coyote_field2(self.amobserve_base,TITLE='YYYYMMDDHH.HH:', /doublevalue, $
                         UVALUE={object:self, method:'date',value:0,$
@@ -385,6 +406,7 @@ pro amobserve__define
             refresh:0, $        ;
             datestring:'', $    ;
             tmp:'', $           ;
+            moon:0, $            ; show the moon?
             plotstyle:0, $      ; 0 = linear in alt, 1 = linear in airmass
             $                   ;; EXTRA WIDGET WINDOWS
             extra_windows: ptr_new(),$
