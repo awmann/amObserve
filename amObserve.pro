@@ -23,8 +23,8 @@ PRO AMOBSERVE::LOAD,event
         readcol,file,name,ra,dec,types,delimiter=',',format='a,d,d,a',/silent
         self.ras = ptr_new(ra)
         self.decs = ptr_new(dec)
-        self.names = ptr_new(name)
-        self.types = ptr_new(types)
+        self.names = ptr_new(strtrim(name,2))
+        self.types = ptr_new(strtrim(types,2))
      endif
   endelse
 END
@@ -163,14 +163,15 @@ pro AMOBSERVE::plot,event
         ;; now for the 'types'
         uniqtypes = types[sort(types)]
         uniqtypes = uniqtypes[uniq(uniqtypes)]
-        colors = [cgcolor('white'),cgcolor('blue'),cgcolor('green'),cgcolor('yellow')]
-        if n_elements(uniqtypes) gt 1 and n_elements(uniqtypes) lt 5 then begin ;;please no more than 4 types for now!
-           for jj = 0,n_elements(uniqtypes)-1 do begin
-              good = where(types eq uniqtypes[jj] and airm lt 4. and airm gt 0 and alt gt 0)
-              if good[0] ne -1 then oplot,hangle[good],(az[good]*!pi/180.),psym=8,/polar,color=colors[jj]
-           endfor
-           legend,uniqtypes,color=colors,psym=8,/top,/left,box=0,charthick=2.0,charsize=1.25
-        endif
+        colors = [cgcolor('white'),cgcolor('blue'),cgcolor('green'),cgcolor('yellow'),cgcolor('orange'),cgcolor('teal')]
+        if n_elements(uniqtypes) gt 6 then uniqtypes = uniqtypes[0:5]
+        ;;if n_elements(uniqtypes) gt 1 and n_elements(uniqtypes) lt 5 then begin ;;please no more than 4 types for now!
+        for jj = 0,n_elements(uniqtypes)-1 do begin
+           good = where(types eq uniqtypes[jj] and airm lt 4. and airm gt 0 and alt gt 0)
+           if good[0] ne -1 then oplot,hangle[good],(az[good]*!pi/180.),psym=8,/polar,color=colors[jj]
+        endfor
+        legend,uniqtypes,color=colors,psym=8,/top,/left,box=0,charthick=2.0,charsize=1.25
+        ;;endif
         
         ;; add the moon?
         if self.moon eq 1 then begin
