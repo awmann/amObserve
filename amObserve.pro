@@ -17,18 +17,28 @@ PRO AMOBSERVE::LOAD,event
         self.decs = ptr_new(dec)
         self.names = ptr_new(name)
         self.types = ptr_new(strarr(n_elements(name)))
-        stop
-     endif
-     if n_elements(tmp) gt 3 then begin
+        self.mags = ptr_new(dblarr(n_elements(name)))
+     endif        
+     if n_elements(tmp) eq 4 then begin
         readcol,file,name,ra,dec,types,delimiter=',',format='a,d,d,a',/silent
+        self.ras = ptr_new(ra)
+        self.decs = ptr_new(dec)
+        self.names = ptr_new(name)
+        self.types = ptr_new(strtrim(types,2))
+        self.mags = ptr_new(dblarr(n_elements(name)))
+     endif
+     if n_elements(tmp) gt 4 then begin
+        readcol,file,name,ra,dec,types,r,delimiter=',',format='a,d,d,a,d',/silent
         self.ras = ptr_new(ra)
         self.decs = ptr_new(dec)
         self.names = ptr_new(strtrim(name,2))
         self.types = ptr_new(strtrim(types,2))
+        self.mags = ptr_new(r)
      endif
   endelse
 END
 
+;; plotting tool
 pro AMOBSERVE::plot,event
 
   if self.ras ne ptr_new() and self.decs ne ptr_new() and self.names ne ptr_new() then begin
@@ -96,7 +106,7 @@ pro AMOBSERVE::plot,event
                     axis,yaxis=1,xtitle='Airmass',ytickv=[60.0,53.0926,41.75,29.904,19.317864,14.276855],ytickname=['1.15','1.25','1.5','2.0','3.0','4.0'],yticks=5
                  end
                  1: begin
-                    good = where(airm gt 1 and airm lt 6 and alt le 90.0 and alt gt 5)
+                    good = where(airm ge 1 and airm lt 6 and alt le 90.0 and alt gt 5)
                     plot,local[good],airm[good],yrange=[4,1],xstyle=9,ystyle=9,xtitle='Local Time',ytitle='Airmass',xrange=[17,31],xticks=6,xtickv=hrmarkers,xtickname=['18','20','22','0','2','4','6'],thick=4
                     if local[where(alt eq max(alt))] gt 24 then cgtext,18,1.3,name,charsize=1.5,charthick=2.0,alignment=0.0 else cgtext,30,1.3,name,charsize=1.5,charthick=2.0,alignment=1.0
                     axis,yaxis=1,xtitle='Altitude (!U0!N)',ytickname=['80','60','40','20'],ytickv=[1.015,1.15,1.55,2.90],yticks=3
@@ -109,10 +119,9 @@ pro AMOBSERVE::plot,event
               caldat,self.jd,dum1,dum2,dum3,hr,m,s
               tmp1 = hr+(m/60.)+(s/3600.0)
               tmp2 = tmp1-obs.tz
-              if tmp2 lt 0 then tmp2+=24.
+              ;;if tmp2 lt 0 then tmp2+=24.
+              if tmp2 lt 15 then tmp2+=24.
               oplot,[tmp2,tmp2],[0,1d5],thick=3,color=cgcolor('green'),linestyle=2
-
-              
            endelse
         endif
         
@@ -124,6 +133,8 @@ pro AMOBSERVE::plot,event
         decs = *self.decs
         names = *self.names
         types = *self.types
+        rmag = *self.mags
+        rcut = self.rcut
         
         observatory,self.observatory,obs
         jd = self.jd
@@ -158,16 +169,16 @@ pro AMOBSERVE::plot,event
         oplot,air15+dblarr(1d3),generatearray(0,2.*!pi,1d3),thick=2,color=cgcolor('teal'),/polar,psym=8,symsize=0.25
         oplot,air20+dblarr(1d3),generatearray(0,2.*!pi,1d3),thick=2,color=cgcolor('orange'),/polar,psym=8,symsize=0.25
         oplot,air30+dblarr(1d3),generatearray(0,2.*!pi,1d3),thick=2,color=cgcolor('red'),/polar,psym=8,symsize=0.25
-        oplot,hangle[l],(az[l]*!pi/180.),psym=8,/polar
+        ;;oplot,hangle[l],(az[l]*!pi/180.),psym=8,/polar
 
         ;; now for the 'types'
         uniqtypes = types[sort(types)]
         uniqtypes = uniqtypes[uniq(uniqtypes)]
-        colors = [cgcolor('white'),cgcolor('blue'),cgcolor('green'),cgcolor('yellow'),cgcolor('orange'),cgcolor('teal')]
-        if n_elements(uniqtypes) gt 6 then uniqtypes = uniqtypes[0:5]
+        colors = [cgcolor('white'),cgcolor('blue'),cgcolor('green'),cgcolor('yellow'),cgcolor('orange'),cgcolor('teal'),cgcolor('charcoal')]
+        if n_elements(uniqtypes) gt 7 then uniqtypes = uniqtypes[0:6]
         ;;if n_elements(uniqtypes) gt 1 and n_elements(uniqtypes) lt 5 then begin ;;please no more than 4 types for now!
         for jj = 0,n_elements(uniqtypes)-1 do begin
-           good = where(types eq uniqtypes[jj] and airm lt 4. and airm gt 0 and alt gt 0)
+           good = where(types eq uniqtypes[jj] and airm lt 4. and airm gt 0 and alt gt 0 and rmag lt rcut)
            if good[0] ne -1 then oplot,hangle[good],(az[good]*!pi/180.),psym=8,/polar,color=colors[jj]
         endfor
         legend,uniqtypes,color=colors,psym=8,/top,/left,box=0,charthick=2.0,charsize=1.25
@@ -178,7 +189,9 @@ pro AMOBSERVE::plot,event
            moonpos,jd,moonra,moondec
            eq2hor,moonra,moondec,jd,moonalt,moonaz,obsname=self.observatory
            moonangle = 90.0-moonalt
-           oplot,[moonangle],[moonaz]*!pi/180.,psym=8,color=cgcolor('pink'),symsize=3.0
+           moonaz+=90.
+           oplot,[moonangle],[moonaz]*!pi/180.,psym=8,color=cgcolor('pink'),symsize=3.0,/Polar
+           ;;print,moonaz
         endif
         
         legend,['1.25','1.50','2.00','3.00'],textcolor=[cgcolor('green'),cgcolor('teal'),cgcolor('orange'),cgcolor('red')],/bottom,/left,box=0,charthick=2.0,charsize=1.25
@@ -204,13 +217,14 @@ pro AMOBSERVE::plot,event
   endelse
 END
 
-
+;; coming soon, this is for selecting more information about a target
 pro AMOBSERVE::SELECT,event
 
   ;; not implimented yet
   
 end
 
+;; toggle moon on/off
 PRO amobserve::moon,event
   if self.moon eq 1 then begin
      print,'Turning Moon off'
@@ -221,6 +235,7 @@ PRO amobserve::moon,event
   endelse
 END
 
+;; plotstyle changes (not essential)
 PRO amobserve::plotstyle1,event
   self.plotstyle = 1
 END
@@ -230,7 +245,8 @@ PRO amobserve::plotstyle2,event
 END
 
 
-
+;; this is actually broken!
+;; fix later
 pro AMOBSERVE::QUIT,event
   return
 end
@@ -250,6 +266,8 @@ pro amobserve_Cleanup,event
 end
 
 ;; set the observatory
+;; we might make this more general, so someone can call for any
+;; observatory. TBD
 PRO amobserve::obs,event
 
   case event.value of
@@ -269,6 +287,20 @@ PRO amobserve::refresh,event
   jd = 1.0*systime(/julian,/utc)
   self.jd = jd
   call_method,'plot',self,event
+
+END
+
+PRO amobserve::ngs,event
+
+  print,'R<=12'
+  self.rcut = 12d0
+
+END
+
+PRO amobserve::lgs,event
+
+  print,'No R cut'
+  self.rcut = 99d0
 
 END
 
@@ -328,6 +360,15 @@ PRO amobserve::widget_setup
   refresh= WIDGET_BUTTON(self.amobserve_base, /FRAME, xoffset=110,yoffset=300, $
                       VALUE=' Refresh ',UVALUE={object:self, method:'Refresh'})
 
+;***create select button:***
+  refresh= WIDGET_BUTTON(self.amobserve_base, /FRAME, xoffset=110,yoffset=100, $
+                      VALUE=' NGS ',UVALUE={object:self, method:'NGS'})
+
+  ;***create select button:***
+  refresh= WIDGET_BUTTON(self.amobserve_base, /FRAME, xoffset=110,yoffset=130, $
+                      VALUE=' LGS ',UVALUE={object:self, method:'LGS'})
+
+  
 ;***create Moon button:***
   refresh= WIDGET_BUTTON(self.amobserve_base, /FRAME, xoffset=110,yoffset=260, $
                       VALUE=' Moon ',UVALUE={object:self, method:'moon'})
@@ -340,6 +381,15 @@ PRO amobserve::widget_setup
                         VALUE=self.datestring, XSIZE=15,scr_ysize=30,$
                         event_pro='AMOBSERVE_Event',textid=textid)
 
+  ;temp =  coyote_field2(self.amobserve_base,TITLE='R cut:', /doublevalue, $
+  ;                      UVALUE={object:self, method:'cutr',value:0d0,$
+  ;                              type: 'val', param:3 },$
+  ;                      decimal=1,/cr_only,$
+  ;                      VALUE=self.rcut, XSIZE=15,scr_ysize=30,$
+  ;                      event_pro='AMOBSERVE_Event',textid=textid)
+
+;;print,textid
+  
   print,self.datestring
   ;;date = widget_Text(self.amobserve_base,$
   ;;                   VALUE = self.datestring,$
@@ -385,6 +435,7 @@ function amobserve::INIT,version=version,_EXTRA=ex
   self.jd = jd
   daycnv,jd,yr,mn,day,hr
   self.datestring = string(yr,format="(I4)")+string(mn,format="(I02)")+string(day,format="(I02)")+string(hr,format="(D05.2)")
+  self.rcut = 99d0
   observatory,self.observatory,obs
 
   window,xsize=550,ysize=1100
@@ -429,6 +480,8 @@ pro amobserve__define
             ras:ptr_new(),$
             decs:ptr_new(),$
             types:ptr_new(),$
+            mags: ptr_new(), $
+            rcut:0d0, $
             $ ;; END
             exists: 0L $
            }
