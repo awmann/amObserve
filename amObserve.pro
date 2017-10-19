@@ -290,11 +290,11 @@ PRO amobserve::refresh,event
 
 END
 
+;; Natural guide star (make this so it's generic and can use
+;; any magnitude cut)
 PRO amobserve::ngs,event
-
   print,'R<=12'
   self.rcut = 12d0
-
 END
 
 PRO amobserve::lgs,event
