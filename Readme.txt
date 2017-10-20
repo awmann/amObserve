@@ -19,6 +19,7 @@ Airmass and Altitude buttons switch between linear in airmass and linear in alti
 
 Quit doesn’t work, not sure why, just use .reset to quit.
 
+
 You can change to any date by typing in the YYYYMMDDHH.HH (hit return after changing, you will get a confirmation in the terminal). I think this is UTC time, but I'll adjust to local time in a future version (or let user specify). Refresh will undo this change (refresh sets to current time).
 
 You can change observatories, but there are just 3 options.
