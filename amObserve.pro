@@ -93,6 +93,10 @@ pro AMOBSERVE::plot,event
               hr = hr+(m/60.)+(s/3600.)
               local = hr-obs.tz
               if min(local) lt 0 then local+=24
+              ll = wherE(local gt 30) & if ll[0] ne -1 then local[ll]-=24
+              ll = wherE(local lt 10) & if ll[0] ne -1 then local[ll]+=24
+              ll = wherE(local gt 30) & if ll[0] ne -1 then local[ll]-=24
+              ll = wherE(local lt 10) & if ll[0] ne -1 then local[ll]+=24
               hrmarkers = [18,20,22,24,26,28,30]
               hangle = 90.0-alt
               radalt = ((hangle)*!pi/180.)
@@ -101,8 +105,11 @@ pro AMOBSERVE::plot,event
 
               case self.plotstyle of 
                  0: begin
-                    plot,local,alt,yrange=[0,90],xstyle=9,ystyle=9,xtitle='Local Time',ytitle='Altitude (!U0!N)',xrange=[17,31],xticks=6,xtickv=hrmarkers,xtickname=['18','20','22','0','2','4','6'],thick=4
-                    if local[where(alt eq max(alt))] gt 24 then cgtext,18,80,name,charsize=1.5,charthick=2.0,alignment=0.0 else cgtext,30,80,name,charsize=1.5,charthick=2.0,alignment=1.0
+                    s = where(alt gt 0)
+                    local = local[s]
+                    alt = alt[s]
+                    plot,local,alt,yrange=[10,90],xstyle=9,ystyle=9,xtitle='Local Time',ytitle='Altitude (!U0!N)',xrange=[17,31],xticks=6,xtickv=hrmarkers,xtickname=['18','20','22','0','2','4','6'],thick=4
+                    if local[where(alt eq max(alt))] gt 24 then xyouts,18,80,name,charsize=1.5,charthick=2.0,alignment=0.0 else xyouts,30,80,name,charsize=1.5,charthick=2.0,alignment=1.0
                     axis,yaxis=1,xtitle='Airmass',ytickv=[60.0,53.0926,41.75,29.904,19.317864,14.276855],ytickname=['1.15','1.25','1.5','2.0','3.0','4.0'],yticks=5
                  end
                  1: begin
@@ -275,6 +282,7 @@ PRO amobserve::obs,event
      1: self.observatory = 'keck'
      2: self.observatory = 'mmto'
      3: self.observatory = 'Palomar'
+     4: self.observatory = 'CTIO'
      else: self.observatory = 'keck'
   endcase
   print,'Observatory set to '+self.observatory
@@ -297,11 +305,14 @@ PRO amobserve::ngs,event
   self.rcut = 12d0
 END
 
-PRO amobserve::lgs,event
+PRO amobserve::bright,event
+  print,'R<=9'
+  self.rcut = 9d0
+END
 
+PRO amobserve::lgs,event
   print,'No R cut'
   self.rcut = 99d0
-
 END
 
 PRO amobserve::date,event
@@ -368,6 +379,9 @@ PRO amobserve::widget_setup
   refresh= WIDGET_BUTTON(self.amobserve_base, /FRAME, xoffset=110,yoffset=130, $
                       VALUE=' LGS ',UVALUE={object:self, method:'LGS'})
 
+  ;***create select button:***
+  refresh= WIDGET_BUTTON(self.amobserve_base, /FRAME, xoffset=110,yoffset=160, $
+                      VALUE=' Bright ',UVALUE={object:self, method:'Bright'})
   
 ;***create Moon button:***
   refresh= WIDGET_BUTTON(self.amobserve_base, /FRAME, xoffset=110,yoffset=260, $
@@ -402,7 +416,7 @@ PRO amobserve::widget_setup
 
 
 ;***select observatory***
-  values = ['McDonald','Maunea Kea','MMT','Palomar']
+  values = ['McDonald','Maunea Kea','MMT','Palomar','CTIO']
   bgroup1 = CW_BGROUP(self.amobserve_base, values, xoffset=250,/COLUMN, $
                       LABEL_TOP='Observatory', /FRAME, uvalue={object:self, method:'OBS'})
 
